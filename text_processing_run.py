@@ -98,7 +98,7 @@ def main():
 
     # z test dokumentov si vytvorime feature vector
     for doc in test_docs:
-        #print(feature_values(doc, representer))
+        print(feature_values(doc, representer))
         pass
 
 # aby spustenie text_processing_run.py zavolalo metodu main() a nechapalo subor ako modul na import
