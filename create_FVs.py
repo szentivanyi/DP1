@@ -3,15 +3,19 @@ import nltk
 from nltk.corpus import stopwords
 import re
 
-documents = reuters.fileids()
+# http://disi.unitn.it/moschitti/corpora.htm  ine CORPUSy
+# http://www.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.html
+# https://github.com/niderhoff/nlp-datasets   NLP DATASETY
+documents = reuters.fileids()  # 21 578 docs v 90 kategoriach
+
+
 # nltk.download('stopwords')
 # stopwords = stopwords.words("english")
 # print(stopwords)
 
-###################333333333#############
+########################################
 ###### 1. STEP: CREATE DICTIONARY ######
-##################33333333###############
-
+########################################
 
 def is_digit(x):
     try:
@@ -40,8 +44,8 @@ def remove_stop_words(doc_words):
                  'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 'd', 'll',
                  'm', 'o', 're', 've', 'y', 'ain', 'aren', 'couldn', 'didn', 'doesn', 'hadn', 'hasn', 'haven', 'isn', 'ma',
                  'mightn', 'mustn', 'needn', 'shan', 'shouldn', 'wasn', 'weren', 'won', 'wouldn']
-
     doc_words = [word for word in doc_words if word not in stopwords]
+
     return doc_words
 
 
@@ -50,8 +54,11 @@ def process_doc(document_id):
     raw_doc = reuters.raw(document_id)
     # print(f"Raw document (id:{document_id}): \n" + raw_doc )
 
-    # Replace delimeter signs with whitespaces and split text to list by whitespaces
-    raw_doc_splitted = raw_doc.replace(',', ' ').replace(' "', ' ').replace('" ', ' ').replace('"', ' ')\
+    # convert text to lower case
+    raw_doc = raw_doc.lower()
+
+    # Replace delimeter signs with whitespaces and split text to a list by whitespaces
+    raw_doc_splitted = raw_doc.replace(', ', ' ').replace(',\n', ' ').replace(' "', ' ').replace('" ', ' ').replace('"', ' ')\
                        .replace('. ', ' ').replace('.\n', ' ').replace('(', ' ').replace(')', ' ')\
                        .replace('>', ' ').replace('<', ' ').split()
     # print(raw_doc_splitted) # list of splitted words
@@ -71,28 +78,29 @@ def process_doc(document_id):
     return raw_doc_splitted
 
 
-def create_dictionary(docs, cut_percent=90):
-    # Create wordlist from all docs
+def create_dictionary(docs, keep_percent=90):
+    # Create wordlist from docs
     wordlist = []
-    for i in range(docs):
-        wordlist.extend(process_doc(documents[i]))
+    for d in range(docs):
+        wordlist.extend(process_doc(documents[d]))
     # print(wordlist)
 
     # Remove stop words
-    wordlist = remove_stop_words(wordlist)
-    # print(doc_wordlist)
+    wordlist_no_sw = remove_stop_words(wordlist)
 
     # Create freq-dictionary
-    wordfreq = [wordlist.count(p) for p in wordlist]
-    dictionary = dict(zip(wordlist, wordfreq))
+    wordfreq = [wordlist_no_sw.count(w) for w in wordlist_no_sw]
+    dictionary = dict(zip(wordlist_no_sw, wordfreq))
+    # print(dictionary)
 
     # Sort freq-dictionary
     dictionary = [(dictionary[key], key) for key in dictionary]
     dictionary.sort()
     dictionary.reverse()
+    # print(dictionary)
 
-    # Shorten to XX percent of the dictionary length
-    percent = (int(len(dictionary) / 100) * cut_percent)
+    # lenght of the dictionary when we keep ?keep_percent? percent
+    percent = (int(len(dictionary) / 100) * keep_percent)
     dictionary = dictionary[0:percent]
     # print(dictionary)
 
@@ -106,69 +114,70 @@ def create_dictionary(docs, cut_percent=90):
 def create_feature_vector(doc, dictionary):
     # Process 1 raw document to list without numbers, signs, etc.
     wordlist = process_doc(documents[doc])
-    # print(wordlist)
+    len_wordlist = len(wordlist)
 
     # Remove stop words
     wordlist = remove_stop_words(wordlist)
-    # print(wordlist)
+    len_wordlist_no_sw = len(wordlist)
 
-    # Replace words not included in vocabulary by __OOV__
-    # print("Words not in dictionary: ")
-    for word in wordlist:
-        s = ''
-        # prejdem cely slovnik a lepim znaky F (false) do stringu, ak nenachadzam v slovniku hladane slovo,
-        # ak je cely string zlozeny len z F, mal by potvrdit ze slovo nie je v slovniku
-        for x in dictionary:
-            if word in x[1]:
-                s += 'T'
-            else:
-                s += 'F'
-        if 'T' not in s:  # slovo nie je v slovniku
-            # print(word)
-            wordlist[wordlist.index(word)] = "*__OOV__*"  # word is Out of Vocabulary
-    # print("New wordlist: ")
-    # print(wordlist)
+    # number of stop words in document
+    sw_count = len_wordlist - len_wordlist_no_sw
 
-    # Create freq-dictionary
-    wordfreq = [wordlist.count(p) for p in wordlist]
-    dictionary = dict(zip(wordlist, wordfreq))
+    # Replace words from doc not included in our dictionary by __OOV__
+    fv = []
+    fv_nn = []
+    for word in dictionary:   # v tvare list slovnikov [ {2:x} , {5:y} ...]
+        if word[-1] in wordlist:  # x, y
+            count = wordlist.count(word[-1])  # pocet vyskytov daneho slova v dokumente
+            fv.append(dict({count:word[-1]}))  # human readable FV
+            fv_nn.append(count)     # NN readable FV
+        else:
+            fv.append('__OOV__')
+            fv_nn.append(0)
 
-    # Sort freq-dictionary
-    dictionary = [(dictionary[key], key) for key in dictionary]
-    dictionary.sort()
-    dictionary.reverse()
+    # pocet slov dokumentu pripojime na koniec FV
+    fv.append(len_wordlist)
+    fv_nn.append(len_wordlist)
 
-    # print(f"Feature vector of document {i}: ")
-    # print(dictionary)
+    # pocet stop slov na dokument v percentach pripojime na koniec FV
+    fv.append(float("{0:.2f}".format((sw_count/len_wordlist)*100)))
+    fv_nn.append(float("{0:.2f}".format((sw_count/len_wordlist)*100)))
 
-    return dictionary  # as Feature Vector
-
-
-################################################
-#### 3. Run      #####
-################################################
-docs = 100
-fvs = []
-dictionary = create_dictionary(docs=docs, cut_percent=80)
-print("Dictionary length: ")
-print(len(dictionary))
-print(dictionary)
-
-print("Feature vectors: ")
-for i in range(docs):
-    fv = create_feature_vector(doc=i, dictionary=dictionary)
-    # print(len(fv))
+    # print("Feature vector: ")
+    # print('dlzka: ' + str(len(fv)))
     # print(fv)
-    if len(fv) < len(dictionary):
-        fv += [None] * (len(dictionary) - len(fv))
-        # print(len(fv))
-        # print(fv)
-        # print()
-    fvs.append(fv)
+
+    return fv, fv_nn  # Feature Vector
 
 
-print("ALL FVs: ")
-print(len(fvs))
+################################################
+#### 3. Run                                #####
+################################################
+
+docs = 20
+
+fvs = []
+dictionary = create_dictionary(docs=docs, keep_percent=80)
+print("Dictionary length and words: ")
+print(len(dictionary))
+# print(dictionary)
+
+print("\n_____Feature vectors:_______")
+for d in range(docs):
+    fv, fv_nn = create_feature_vector(doc=d, dictionary=dictionary)  # human readable FV
+
+    print("Format for HUMAN: ")
+    print('Dlzka: ' + str(len(fv)))
+    print(fv)
+
+    print("Format for NN: ")
+    print(len(fv_nn))
+    print(fv_nn)
+
+    fvs.append(fv_nn)
+
+print()
+print("Count of FVs: " + str(len(fvs)))
 print(fvs)
 
 
