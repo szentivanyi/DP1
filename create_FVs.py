@@ -154,7 +154,7 @@ def create_feature_vector(doc, dictionary):
 #### 3. Run                                #####
 ################################################
 
-docs = 20
+docs = 50
 
 fvs = []
 dictionary = create_dictionary(docs=docs, keep_percent=80)
