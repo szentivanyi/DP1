@@ -1,7 +1,7 @@
 from nltk.corpus import reuters
-import nltk
-from nltk.corpus import stopwords
-import re
+# import nltk
+# from nltk.corpus import stopwords
+# import re
 
 # http://disi.unitn.it/moschitti/corpora.htm  ine CORPUSy
 # http://www.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.html
@@ -108,76 +108,54 @@ def create_dictionary(docs, keep_percent=90):
 
 
 ################################################
-#### 2. Create Feature-Vector for each doc #####
+#### 1. Create Feature-Vector for each doc #####
 ################################################
 
-def create_feature_vector(doc, dictionary):
-    # Process 1 raw document to list without numbers, signs, etc.
-    wordlist = process_doc(documents[doc])
-    len_wordlist = len(wordlist)
+def create_fvs(docs):
+    # vytvor slovnik z poctu 'docs' dokumentov a zachovaj len 80% slovnika
+    dictionary = create_dictionary(docs, keep_percent=80)
 
-    # Remove stop words
-    wordlist = remove_stop_words(wordlist)
-    len_wordlist_no_sw = len(wordlist)
+    fvs = []
+    for doc in range(docs):
+        # Process 1 raw document to list without numbers, signs, etc.
+        wordlist = process_doc(documents[doc])
+        len_wordlist = len(wordlist)
 
-    # number of stop words in document
-    sw_count = len_wordlist - len_wordlist_no_sw
+        # Remove stop words
+        wordlist = remove_stop_words(wordlist)
+        len_wordlist_no_sw = len(wordlist)
 
-    # Replace words from doc not included in our dictionary by __OOV__
-    fv = []
-    fv_nn = []
-    for word in dictionary:   # v tvare list slovnikov [ {2:x} , {5:y} ...]
-        if word[-1] in wordlist:  # x, y
-            count = wordlist.count(word[-1])  # pocet vyskytov daneho slova v dokumente
-            fv.append(dict({count:word[-1]}))  # human readable FV
-            fv_nn.append(count)     # NN readable FV
-        else:
-            fv.append('__OOV__')
-            fv_nn.append(0)
+        # number of stop words in document
+        sw_count = len_wordlist - len_wordlist_no_sw
 
-    # pocet slov dokumentu pripojime na koniec FV
-    fv.append(len_wordlist)
-    fv_nn.append(len_wordlist)
+        # Replace words from doc not included in our dictionary by __OOV__
+        fv = []
+        fv_nn = []
+        for word in dictionary:   # v tvare list slovnikov [ {2:x} , {5:y} ...]
+            if word[-1] in wordlist:  # x, y
+                count = wordlist.count(word[-1])  # pocet vyskytov daneho slova v dokumente
+                fv.append(dict({count:word[-1]}))  # human readable FV
+                fv_nn.append(count)     # NN readable FV
+            else:
+                fv.append('__OOV__')
+                fv_nn.append(0)
 
-    # pocet stop slov na dokument v percentach pripojime na koniec FV
-    fv.append(float("{0:.2f}".format((sw_count/len_wordlist)*100)))
-    fv_nn.append(float("{0:.2f}".format((sw_count/len_wordlist)*100)))
+        # pocet slov dokumentu pripojime na koniec FV
+        fv.append(len_wordlist)
+        fv_nn.append(len_wordlist)
 
-    # print("Feature vector: ")
-    # print('dlzka: ' + str(len(fv)))
-    # print(fv)
+        # pocet stop slov na dokument v percentach pripojime na koniec FV
+        fv.append(float("{0:.2f}".format((sw_count/len_wordlist)*100)))
+        fv_nn.append(float("{0:.2f}".format((sw_count/len_wordlist)*100)))
 
-    return fv, fv_nn  # Feature Vector
+        fvs.append(fv_nn)
+
+        # print("Feature vector: ")
+        # print('dlzka: ' + str(len(fv)))
+        # print(fv)
+
+    return fvs  # all Feature Vectors as list
 
 
-################################################
-#### 3. Run                                #####
-################################################
-
-docs = 50
-
-fvs = []
-dictionary = create_dictionary(docs=docs, keep_percent=80)
-print("Dictionary length and words: ")
-print(len(dictionary))
-# print(dictionary)
-
-print("\n_____Feature vectors:_______")
-for d in range(docs):
-    fv, fv_nn = create_feature_vector(doc=d, dictionary=dictionary)  # human readable FV
-
-    print("Format for HUMAN: ")
-    print('Dlzka: ' + str(len(fv)))
-    print(fv)
-
-    print("Format for NN: ")
-    print(len(fv_nn))
-    print(fv_nn)
-
-    fvs.append(fv_nn)
-
-print()
-print("Count of FVs: " + str(len(fvs)))
-print(fvs)
 
 
