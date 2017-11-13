@@ -6,12 +6,22 @@ from nltk.corpus import reuters
 # http://disi.unitn.it/moschitti/corpora.htm  ine CORPUSy
 # http://www.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.html
 # https://github.com/niderhoff/nlp-datasets   NLP DATASETY
-documents = reuters.fileids()  # 21 578 docs v 90 kategoriach
-
 
 # nltk.download('stopwords')
 # stopwords = stopwords.words("english")
 # print(stopwords)
+
+train_docs = []
+test_docs = []
+# rozdelim si databazu dokumentov do trenovacej a testovacej mnoziny (list-u)
+for doc_id in reuters.fileids():
+    if doc_id.startswith("train"):
+        train_docs.append(doc_id)
+    else:
+        test_docs.append(doc_id)
+
+
+# documents = reuters.fileids()  # 21 578 docs v 90 kategoriach
 
 ########################################
 ###### 1. STEP: CREATE DICTIONARY ######
@@ -79,6 +89,7 @@ def process_doc(document_id):
 
 
 def create_dictionary(docs, keep_percent=90):
+    documents = test_docs[:docs]
     # Create wordlist from docs
     wordlist = []
     for d in range(docs):
@@ -111,9 +122,11 @@ def create_dictionary(docs, keep_percent=90):
 #### 1. Create Feature-Vector for each doc #####
 ################################################
 
-def create_fvs(docs):
+def create_fvs_test(docs):
     # vytvor slovnik z poctu 'docs' dokumentov a zachovaj len 80% slovnika
     dictionary = create_dictionary(docs, keep_percent=80)
+
+    documents = test_docs[:docs]
 
     fvs = []
     for doc in range(docs):
