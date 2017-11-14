@@ -1,26 +1,11 @@
 from nltk.corpus import reuters
-import nltk
 
 
-# nltk.download('reuters')
-
-
-def create_lvs_train(docs):
+def create_lvs_train(train_docs):
     all_topics = reuters.categories()
 
-    # rozdelim si databazu dokumentov do trenovacej a testovacej mnoziny (list-u)
-    train_docs = []
-    test_docs = []
-    for doc_id in reuters.fileids():
-        if doc_id.startswith("train"):
-            train_docs.append(doc_id)
-        else:
-            test_docs.append(doc_id)
-
-    documents_ids = train_docs[:docs]
-
     lvs = []
-    for id in documents_ids:
+    for id in train_docs:
         doc_topic = reuters.categories(id)
         lv = []
         for topic in all_topics:
